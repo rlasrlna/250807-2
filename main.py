@@ -2,28 +2,27 @@ import streamlit as st
 import pandas as pd
 import altair as alt
 
-# 제목
-st.title("MBTI 유형별 전 세계 평균 비율 분석")
+st.title("MBTI 유형별 직업 만족도 시각화")
 
-# CSV 파일 읽기 (현재 경로에 존재한다고 가정)
-df = pd.read_csv("countriesMBTI_16types.csv")
+# CSV 파일 업로드
+uploaded_file = st.file_uploader("CSV 파일을 업로드하세요", type="csv")
 
-# MBTI 열만 추출 (첫 번째 열은 'Country')
-mbti_cols = df.columns[1:]
+if uploaded_file is not None:
+    df = pd.read_csv(uploaded_file)
 
-# MBTI 평균 계산
-mbti_avg = df[mbti_cols].mean().reset_index()
-mbti_avg.columns = ['MBTI', 'Average']
+    # MBTI 열만 선택
+    if 'MBTI' in df.columns and '직업 만족도' in df.columns:
+        mbti_avg = df.groupby("MBTI")["직업 만족도"].mean().reset_index()
 
-# 평균값 내림차순 정렬
-mbti_avg = mbti_avg.sort_values(by='Average', ascending=False)
+        st.subheader("MBTI별 직업 만족도 평균")
+        chart = alt.Chart(mbti_avg).mark_bar().encode(
+            x="MBTI:N",
+            y="직업 만족도:Q",
+            tooltip=["MBTI", "직업 만족도"]
+        ).properties(width=600, height=400)
 
-# 결과 출력
-st.subheader("전 세계 MBTI 유형별 평균 비율 (%)")
-st.dataframe(mbti_avg.style.format({'Average': '{:.2%}'}))
-
-# Altair 막대그래프
-chart = alt.Chart(mbti_avg).mark_bar().encode(
-    x=alt.X('MBTI', sort='-y'),
-    y=alt.Y('Average', title='평균 비율'),
-    tooltip=
+        st.altair_chart(chart, use_container_width=True)
+    else:
+        st.error("CSV 파일에 'MBTI'와 '직업 만족도' 열이 있어야 합니다.")
+else:
+    st.info("CSV 파일을 업로드해주세요.")
